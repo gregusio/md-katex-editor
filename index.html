@@ -156,6 +156,7 @@
         });
 
         const storageKey = 'md-latex-editor-content';
+        const languageKey = 'md-latex-editor-language';
         const savedContent = localStorage.getItem(storageKey);
         if (savedContent !== null) {
             editor.setValue(savedContent);
@@ -179,7 +180,8 @@
             }
         };
 
-        let currentLang = document.documentElement.lang === 'en' ? 'en' : 'pl';
+        const savedLanguage = localStorage.getItem(languageKey);
+        let currentLang = savedLanguage || (document.documentElement.lang === 'en' ? 'en' : 'pl');
 
         function applyLanguage(lang) {
             currentLang = lang;
@@ -188,6 +190,7 @@
             clearAllButton.textContent = translations[lang].clearAll;
             langPlButton.classList.toggle('active', lang === 'pl');
             langEnButton.classList.toggle('active', lang === 'en');
+            localStorage.setItem(languageKey, lang);
         }
 
         langPlButton.addEventListener('click', () => applyLanguage('pl'));
