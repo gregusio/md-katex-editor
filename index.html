@@ -235,7 +235,7 @@
                 .replace(/\\\[/g, '\\\\[')
                 .replace(/\\\]/g, '\\\\]');
 
-            preview.innerHTML = marked.parse(rawText);
+            preview.innerHTML = marked.parse(rawText, { breaks: true });
 
             renderMathInElement(preview, {
                 delimiters: [
