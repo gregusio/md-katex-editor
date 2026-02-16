@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown + KaTeX Pro Edytor</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            overflow: hidden;
+        }
+
+        #editor-pane {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        #preview-pane {
+            width: 656.8px;
+            height: 100%;
+        }
+
+        .CodeMirror {
+            height: 100%;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            background-color: #282c34;
+            color: #abb2bf;
+            border-right: 2px solid #ddd;
+        }
+
+        .editor-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background-color: #1f242c;
+            border-right: 2px solid #ddd;
+            border-bottom: 1px solid #2d333b;
+        }
+
+        .editor-toolbar button {
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: #3a7afe;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .editor-toolbar button:hover {
+            background: #2f6ae0;
+        }
+
+        .editor-toolbar .lang-buttons {
+            margin-left: auto;
+            display: flex;
+            gap: 6px;
+        }
+
+        .editor-toolbar .lang-button {
+            background: #39414d;
+            font-weight: 600;
+        }
+
+        .editor-toolbar .lang-button.active {
+            background: #3a7afe;
+        }
+
+        .editor-wrapper {
+            flex: 1;
+            min-height: 0;
+        }
+
+        .CodeMirror-gutters {
+            background-color: #282c34;
+            border-right: 1px solid #444;
+        }
+
+        .CodeMirror-activeline-background {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .CodeMirror-linenumber {
+            color: #5c6370;
+        }
+
+        .CodeMirror-cursor {
+            border-left: 2px solid #abb2bf !important;
+        }
+
+        #preview {
+            height: 100%;
+            padding: 24px;
+            overflow-y: auto;
+            background-color: #ffffff;
+            line-height: 1.6;
+            box-sizing: border-box;
+            position: relative;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="editor-pane">
+        <div class="editor-toolbar">
+            <button id="copy-all" type="button">Copy all</button>
+            <button id="clear-all" type="button">Clear all</button>
+            <div class="lang-buttons">
+                <button id="lang-pl" class="lang-button" type="button">PL</button>
+                <button id="lang-en" class="lang-button" type="button">EN</button>
+            </div>
+        </div>
+        <div class="editor-wrapper">
+            <textarea id="editor">
+            </textarea>
+        </div>
+    </div>
+
+    <div id="preview-pane">
+        <div id="preview"></div>
+    </div>
+
+    <script>
+        const preview = document.getElementById('preview');
+
+        const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+            mode: 'markdown',
+            theme: 'one-dark',
+            lineNumbers: true,
+            styleActiveLine: true,
+            lineWrapping: true
+        });
+
+        const storageKey = 'md-latex-editor-content';
+        const savedContent = localStorage.getItem(storageKey);
+        if (savedContent !== null) {
+            editor.setValue(savedContent);
+        }
+
+        const copyAllButton = document.getElementById('copy-all');
+        const clearAllButton = document.getElementById('clear-all');
+        const langPlButton = document.getElementById('lang-pl');
+        const langEnButton = document.getElementById('lang-en');
+
+        const translations = {
+            pl: {
+                copyAll: 'Kopiuj wszystko',
+                clearAll: 'Wyczyść wszystko',
+                confirmClear: 'Wyczyścić całą zawartość edytora?'
+            },
+            en: {
+                copyAll: 'Copy all',
+                clearAll: 'Clear all',
+                confirmClear: 'Clear all editor content?'
+            }
+        };
+
+        let currentLang = document.documentElement.lang === 'en' ? 'en' : 'pl';
+
+        function applyLanguage(lang) {
+            currentLang = lang;
+            document.documentElement.lang = lang;
+            copyAllButton.textContent = translations[lang].copyAll;
+            clearAllButton.textContent = translations[lang].clearAll;
+            langPlButton.classList.toggle('active', lang === 'pl');
+            langEnButton.classList.toggle('active', lang === 'en');
+        }
+
+        langPlButton.addEventListener('click', () => applyLanguage('pl'));
+        langEnButton.addEventListener('click', () => applyLanguage('en'));
+        applyLanguage(currentLang);
+        copyAllButton.addEventListener('click', async () => {
+            const textToCopy = editor.getValue();
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(textToCopy);
+                    return;
+                } catch (error) {
+                }
+            }
+
+            const temp = document.createElement('textarea');
+            temp.value = textToCopy;
+            temp.setAttribute('readonly', '');
+            temp.style.position = 'absolute';
+            temp.style.left = '-9999px';
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+        });
+
+        clearAllButton.addEventListener('click', () => {
+            const shouldClear = window.confirm(translations[currentLang].confirmClear);
+            if (!shouldClear) {
+                return;
+            }
+            editor.setValue('');
+            editor.focus();
+        });
+
+        function updatePreview() {
+            let rawText = editor.getValue();
+
+            rawText = rawText
+                .replace(/\\\(/g, '\\\\(')
+                .replace(/\\\)/g, '\\\\)')
+                .replace(/\\\[/g, '\\\\[')
+                .replace(/\\\]/g, '\\\\]');
+
+            preview.innerHTML = marked.parse(rawText);
+
+            renderMathInElement(preview, {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false },
+                    { left: '\\(', right: '\\)', display: false },
+                    { left: '\\[', right: '\\]', display: true }
+                ],
+                throwOnError: false
+            });
+        }
+
+        editor.on('change', () => {
+            updatePreview();
+            localStorage.setItem(storageKey, editor.getValue());
+        });
+        updatePreview();
+
+
+        let isSyncingLeft = false;
+        let isSyncingRight = false;
+
+        editor.on('scroll', function (cm) {
+            if (isSyncingLeft) { isSyncingLeft = false; return; }
+            isSyncingRight = true;
+
+            const info = cm.getScrollInfo();
+            const scrollable = info.height - info.clientHeight;
+            const percentage = scrollable > 0 ? (info.top / scrollable) : 0;
+
+            preview.scrollTop = percentage * (preview.scrollHeight - preview.clientHeight);
+        });
+
+        preview.addEventListener('scroll', function () {
+            if (isSyncingRight) { isSyncingRight = false; return; }
+            isSyncingLeft = true;
+
+            const scrollable = this.scrollHeight - this.clientHeight;
+            const percentage = scrollable > 0 ? (this.scrollTop / scrollable) : 0;
+            const info = editor.getScrollInfo();
+
+            editor.scrollTo(null, percentage * (info.height - info.clientHeight));
+        });
+    </script>
+
+</body>
+
+</html>
