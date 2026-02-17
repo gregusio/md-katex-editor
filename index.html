@@ -169,6 +169,8 @@
         <div class="editor-toolbar">
             <button id="copy-all" type="button">Copy all</button>
             <button id="clear-all" type="button">Clear all</button>
+            <button id="font-size-up" type="button">A+</button>
+            <button id="font-size-down" type="button">A-</button>
             <div class="lang-buttons">
                 <button id="lang-pl" class="lang-button" type="button">PL</button>
                 <button id="lang-en" class="lang-button" type="button">EN</button>
@@ -199,6 +201,7 @@
 
         const storageKey = 'md-latex-editor-content';
         const languageKey = 'md-latex-editor-language';
+        const fontSizeKey = 'md-latex-editor-fontsize';
         const savedContent = localStorage.getItem(storageKey);
         if (savedContent !== null) {
             editor.setValue(savedContent);
@@ -206,6 +209,8 @@
 
         const copyAllButton = document.getElementById('copy-all');
         const clearAllButton = document.getElementById('clear-all');
+        const fontSizeUpButton = document.getElementById('font-size-up');
+        const fontSizeDownButton = document.getElementById('font-size-down');
         const langPlButton = document.getElementById('lang-pl');
         const langEnButton = document.getElementById('lang-en');
 
@@ -238,6 +243,28 @@
         langPlButton.addEventListener('click', () => applyLanguage('pl'));
         langEnButton.addEventListener('click', () => applyLanguage('en'));
         applyLanguage(currentLang);
+
+        let currentFontSize = parseInt(localStorage.getItem(fontSizeKey)) || 16;
+
+        function updateFontSize(size) {
+            currentFontSize = Math.max(10, Math.min(32, size));
+            const cm = document.querySelector('.CodeMirror');
+            if (cm) {
+                cm.style.fontSize = currentFontSize + 'px';
+            }
+            localStorage.setItem(fontSizeKey, currentFontSize);
+            editor.refresh();
+        }
+
+        updateFontSize(currentFontSize);
+
+        fontSizeUpButton.addEventListener('click', () => {
+            updateFontSize(currentFontSize + 2);
+        });
+
+        fontSizeDownButton.addEventListener('click', () => {
+            updateFontSize(currentFontSize - 2);
+        });
         copyAllButton.addEventListener('click', async () => {
             const textToCopy = editor.getValue();
             if (navigator.clipboard && navigator.clipboard.writeText) {
