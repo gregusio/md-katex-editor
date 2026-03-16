@@ -28,12 +28,51 @@
             overflow: hidden;
         }
 
+        #divider {
+            width: 10px;
+            cursor: col-resize;
+            background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.08), transparent);
+            flex: 0 0 auto;
+            position: relative;
+            z-index: 5;
+        }
+
+        #divider:hover {
+            background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.16), transparent);
+        }
+
+        #divider::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.18);
+        }
+
+        body.resizing {
+            user-select: none;
+            cursor: col-resize;
+        }
+
+        body.resizing * {
+            pointer-events: none;
+        }
+
+        body.resizing #divider {
+            pointer-events: auto;
+        }
+
         #editor-pane {
-            flex: 1;
+            flex: 0 0 auto;
+            width: 50%;
             height: 100%;
             display: flex;
             flex-direction: column;
             min-height: 0;
+            min-width: 240px;
         }
 
         .CodeMirror {
@@ -108,7 +147,8 @@
         }
 
         #preview-pane {
-            width: 50%;
+            flex: 1 1 auto;
+            width: auto;
             height: 100%;
             position: relative;
             overflow-y: auto;
@@ -117,6 +157,7 @@
             justify-content: center;
             align-items: flex-start;
             padding-bottom: 80px;
+            min-width: 240px;
         }
 
         #preview-simulator {
@@ -181,6 +222,8 @@
         </div>
     </div>
 
+    <div id="divider" aria-label="Resize panes" title="Drag to resize"></div>
+
     <div id="preview-pane">
         <div id="preview-simulator">
             <div id="preview"></div>
@@ -190,6 +233,8 @@
     <script>
         const preview = document.getElementById('preview');
         const previewPane = document.getElementById('preview-pane');
+        const editorPane = document.getElementById('editor-pane');
+        const divider = document.getElementById('divider');
 
         const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
             mode: 'markdown',
@@ -202,10 +247,59 @@
         const storageKey = 'md-latex-editor-content';
         const languageKey = 'md-latex-editor-language';
         const fontSizeKey = 'md-latex-editor-fontsize';
+        const paneSplitKey = 'md-latex-editor-split';
+
         const savedContent = localStorage.getItem(storageKey);
         if (savedContent !== null) {
             editor.setValue(savedContent);
         }
+
+        function clamp(n, min, max) {
+            return Math.max(min, Math.min(max, n));
+        }
+
+        function applyEditorWidthPx(px) {
+            const minPx = 240;
+            const maxPx = window.innerWidth - 240 - divider.offsetWidth;
+            const clamped = clamp(px, minPx, maxPx);
+
+            editorPane.style.width = clamped + 'px';
+            localStorage.setItem(paneSplitKey, String(clamped));
+            editor.refresh();
+        }
+
+        const savedSplit = parseInt(localStorage.getItem(paneSplitKey) || '', 10);
+        if (!Number.isNaN(savedSplit)) {
+            applyEditorWidthPx(savedSplit);
+        } else {
+            applyEditorWidthPx(Math.floor(window.innerWidth * 0.5));
+        }
+
+        let isResizing = false;
+
+        divider.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.classList.add('resizing');
+            e.preventDefault();
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            applyEditorWidthPx(e.clientX);
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (!isResizing) return;
+            isResizing = false;
+            document.body.classList.remove('resizing');
+        });
+
+        window.addEventListener('resize', () => {
+            const current = parseInt(localStorage.getItem(paneSplitKey) || '', 10);
+            if (!Number.isNaN(current)) {
+                applyEditorWidthPx(current);
+            }
+        });
 
         const copyAllButton = document.getElementById('copy-all');
         const clearAllButton = document.getElementById('clear-all');
